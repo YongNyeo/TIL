@@ -1,12 +1,16 @@
 # Thread (쓰레드) 
 
-[Thread](#Thread_(쓰레드))
+- [Thread](#Thread_(쓰레드))
 
-[Multi-Thread](#Multi-Thread)
+- [Multi-Thread](#Multi-Thread)
 
-[Multi-Proces](#Multi-Proces)
+- [Multi-Proces](#Multi-Proces)
 
-[더 좋은것은?](#무조건_Multi-Thread가_유리한가?)
+- [더 좋은것은?](#더_좋은것은?)
+
+- [Concurrency(동시성) vs Parallelism(병렬처리)](#Concurrency(동시성)_vs_Parallelism(병렬처리))
+
+---
 
 ❗ 해시에 대해 공부하다보니 동시성이나 thread-safe와 관련된 내용들이 나온다. 쓰레드를 제대로 모르고서야 당연히 해시도 제대로 이해못할게 당연하다보니 쓰레드에 대해 정리를 좀 해보려한다. 
 
@@ -17,7 +21,7 @@
 <img width="237" alt="스크린샷 2023-07-19 오전 4 08 36" src="https://github.com/YongNyeo/TIL/assets/109174778/6130ccd3-f49c-4afc-bd4c-5331b9617292">
 
 
-잠깐 프로세스의 보고가자면, 다음과 같이 각각 독립된 메모리 영역을 할당받는다. 
+잠깐 프로세스의 메모리영역을 보고가자면, 다음과 같이 각각 독립된 메모리 영역을 할당받는다. 
 - code: 프로그램 코드가 올라간다 (cpu가 해석할수 있는 바이너리 코드상태로 올라감)
 - data: 전역변수(global variable) 또는 정적변수(static)변수를 할당한다.
 - heap(=files): (객체생성 등)동적으로 할당되는 부분이다.
@@ -27,7 +31,8 @@
 
 ---
 
-### Multi-Thread
+## Multi-Thread
+
 <img width="670" alt="스크린샷 2023-07-19 오전 4 06 38" src="https://github.com/YongNyeo/TIL/assets/109174778/8d7dc8bd-0ad3-4650-8234-450680976e09">
 
 위 그림을 보면 하나의 프로세스 내에서 Code,Data,Heap은 공유를 하고 각 Thread마다 Stack과 Register(그림에는 X)를 갖고있다. 
@@ -42,17 +47,44 @@
 
 ---
 
-### Multi-Proces
+## Multi-Proces
 
 <img width="390" alt="스크린샷 2023-07-19 오전 4 10 22" src="https://github.com/YongNyeo/TIL/assets/109174778/cbcd7ede-2d81-410c-ba42-1ffa61e4d914">
 
-#### 반면 멀티 프로세스는 하나의 프로세스를 fork해서 복제품을 만든뒤 독립적으로 움직이고,메모리를 차지하는 형태다. 자원을 공유하지 않기에 Context-switching 비용도 상대적으로 비싸다.
+반면 멀티 프로세스는 하나의 프로세스를 fork해서 복제품을 만든뒤 독립적으로 움직이고,메모리를 차지하는 형태다. 
+- 독립적인 존재지만 모니터, 프린터, 메모리, 파일, 데이터 등의 공유자원에 대한 동기화가 필요할때는 IPC통신을 이용한다.
+- Context-switching 비용도 상대적으로 비싸다.
 
-여기까지만 보면 무조건 자원도 공유하고 있고 멀티프로세스가 개이득아닌가? 라고 생각할 수 있다.
 
 ---
 
-### 무조건 Multi-Thread가 유리한가?
+## 더 좋은것은?
 
---추가 작성예정
+자원을 공유하고 있는 멀티 쓰레드 쓰는게 이득 아닌가? 라고 생각할 수 있다.
+
+무조건 그렇지는 않다. 실생활 예시로는 인터넷 브라우저가 있다. 우리가 웹 검색을 하다가 탭을 엄청 많이 켜놨는데 한번씩 다 날라갈 때가 있다. 이런경우엔 쓰레드(탭)끼리 공유자원이 있고 서로에게 영향을 미칠수 있기 때문이다.
+
+그래서 우리는 가끔 브라우저(탭x)창을 새로 더 띄워놓을 때가 있다. 각 프로세스(브라우저 창)는 독립적이기 때문에 하나가 꺼진다고 다른 하나에 영향을 미치지 않는다. 
+
+쓰레드의 Context-switching을 믿고 막 쓰다가는 이러한 일이 일어날 수 있다.  멀티 프로세스가 좋을지 멀티 쓰레드가 좋을지에 대한 답은 상황에 따라 다른것 이다.
+
+--- 
+
+## Concurrency(동시성) vs Parallelism(병렬처리)
+
+이번엔 멀티프로세스와 멀티쓰레드를 어떻게(how) 사용할 것인가에 대해 알아보려한다.
+
+<img width="473" alt="스크린샷 2023-07-19 오후 6 20 41" src="https://github.com/YongNyeo/TIL/assets/109174778/c3475fb3-6d29-4650-ae1e-4ab506207324">
+
+process또는 thread를 실행시켜주는 CPU의 Core가 있다. Core는 비용때문에 항상 개수가 한정되어있기에 우리는 이것을 아주 잘 써야한다. 
+
+#### Concurrency 
+
+- 하나의 Core에 두개 이상의 process(또는 thread)가 작업되는것이다.
+- Core의 계산이 매우 빨라서 Core가 진행하는 작업들은 실제로는 번갈아가며 작업되지만 동시에 진행되는 것처럼 보이는 것이다.
+
+#### Parallelism
+
+- 둘 이상의 Core가 각자 process(또는 thread)를 맡아 동시에 진행되는것이다.
+- Concurrency처럼 동시에 진행되는것 '처럼'이 아닌 병렬로 동시에 진행되는것이다.
 
