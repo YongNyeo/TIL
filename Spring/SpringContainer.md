@@ -31,4 +31,105 @@
 - 리스너로 등록된 빈에게 이벤트 발생을 알려준다.
 
 
+---
+
+# 🔢 스프링 컨테이너의 싱글톤 비밀 @Configuration
+
+## @Bean vs @Component vs @Configuration  3가지로 나눠 이해하기!
+
+우선 세 어노테이션 모두 스프링 컨테이너에 빈으로 등록 해주도록 도와준다.
+
+왜냐? 최상단 @ComponentScan에서 하위 패키지의 @Bean,@Component (@configuration) 을 스캔해준다.
+
+@Bean은 메서드 단위에 붙여서 외부 라이브러리를 주입시키거나 다형성으로 여러 구현체를 등록할때 이용할 수 있다.
+
+    public class MyBeanConfiguration { 
+
+    @Bean 
+    public MangKyuResource mangKyuResource() {
+        return new MangKyuResource(); 
+    } 
+만약 여기서 리턴하는 MangKyuResource값이 외부 라이브러리라면, @Bean을 이용해서 수동 등록해주는 것이 편할 것이다.
+
+---
+
+@Component 
+
+컴포넌트는 클래스 단위에 붙이는 어노테이션이다. 보통 개발자가 작성하는 클래스에 직접 붙이고, 자동으로 스프링컨테이너에 등록해준다.
+
+<img width="276" alt="스크린샷 2023-11-02 오후 7 37 31" src="https://github.com/YongNyeo/TIL/assets/109174778/12deaf62-4370-41fb-8c9e-2b7f8518aa30">
+
+컴포넌트를 상속받는 어노테이션으로 우리가 많이 사용하는 @Configuration, @Service, @Controller...가 있다.
+
+---
+
+@Configuration의 비밀
+
+우선 스프링 컨테이너는 (빈스코프에 따라) 싱글톤을 유지하고있다.
+
+여기서 가장 중요한것은 @Configuration인데, 수동으로 등록하는 스프링 빈이 싱글톤으로 유지되는데 아주 중요한 역할을 해준다. 
+
+@Configuration은 보통 @Bean이 달려있는 여러 얽히고 설킨 환경 설정 정보들의 집합체다. 
+
+예시를 하나 보자. 
+
+
+    public class MyBeanConfiguration { 
+
+    @Bean 
+    public MangKyuResource mangKyuResource() {
+        return new MangKyuResource(); 
+    } 
+    
+    @Bean 
+    public MyFirstBean myFirstBean() { 
+        return new MyFirstBean(mangKyuResource()); 
+    } 
+    
+    @Bean 
+    public MySecondBean mySecondBean() { 
+        return new MySecondBean(mangKyuResource()); 
+    } 
+
+기본적으로 Bean은 메서드 이름으로 등록이 된다. 
+
+그리고 계속 강조하지만, 해당 Bean은 항상 같은 객체(싱글톤)을 반환해서 싱글톤 (빈스코프) 빈이라고 하는것이다. 
+
+하지만 위와 같은 코드에서는 싱글톤이 깨질 수 있다.
+
+왜냐하면 mangKyuResource 빈에서 호출한 것의 결과는 new MangKyuResource() 일것이고,
+
+그 아래 메서드 myFirstBean 빈에서 호출한것 결과 또한  new MangKyuResource()인데, 
+
+이때 @Configuration이 없으면 각 빈은 각자 new로 새로운 객체를 생성하게 돼서 싱글톤이 깨지는것이다.
+
+    @Configuration
+    public class MyBeanConfigurationProxy extends MyBeanConfiguration { 
+
+    private Object source;
+
+    @Override
+    public MangKyuResource mangKyuResource() {
+        if (mangKyuResource == null) {
+            source = super.mangKyuResource();
+        }
+        
+        return source; 
+    } 
+    
+    @Override
+    public MyFirstBean myFirstBean() { 
+        return super.myFirstBean();
+    } 
+    
+    @Override
+    public MySecondBean mySecondBean() { 
+        return super.mySecondBean();
+    } 
+
+@Configuation 을 붙이면 대충 이러한 프록시 코드가 생성된다. 
+
+정리하자면 @Configuation은 각자 다른 빈을 통해 객체를 생성하더라도 항상 같은 결과(싱글톤)를 유지할 수 있도록 환경 설정을 모두 관리해준다고 생각하면 된다.
+
+
 
